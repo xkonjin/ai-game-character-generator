@@ -3,8 +3,9 @@ import path from 'path';
 import type { SkeletonType, RiggingResult } from '../types.js';
 
 const TRIPO_API_BASE = 'https://api.tripo3d.ai/v2/openapi';
+const MESHY_API_BASE = 'https://api.meshy.ai/v2';
 
-export type RiggingProvider = 'tripo' | 'placeholder';
+export type RiggingProvider = 'tripo' | 'meshy' | 'placeholder';
 
 interface TripoTaskResponse {
   code: number;
@@ -194,9 +195,24 @@ export async function generateAndRig3DModel(
     return createPlaceholderModel(modelDir, skeletonType);
   }
 
+  // Try Meshy first if selected or as fallback
+  if (provider === 'meshy') {
+    const meshyKey = process.env.MESHY_API_KEY;
+    if (meshyKey) {
+      return generateWithMeshy(imagePath, modelDir, skeletonType, meshyKey);
+    }
+    console.warn('[Rigging] MESHY_API_KEY not set, trying Tripo...');
+  }
+
   const apiKey = process.env.TRIPO_API_KEY;
   if (!apiKey) {
-    console.warn('[Rigging] TRIPO_API_KEY not set, using placeholder model');
+    // Try Meshy as fallback
+    const meshyKey = process.env.MESHY_API_KEY;
+    if (meshyKey) {
+      console.log('[Rigging] TRIPO_API_KEY not set, using Meshy instead');
+      return generateWithMeshy(imagePath, modelDir, skeletonType, meshyKey);
+    }
+    console.warn('[Rigging] No API keys set, using placeholder model');
     return createPlaceholderModel(modelDir, skeletonType);
   }
 
@@ -243,6 +259,95 @@ export async function generateAndRig3DModel(
     console.warn('[Rigging] Falling back to placeholder model');
     return createPlaceholderModel(modelDir, skeletonType);
   }
+}
+
+// Meshy API implementation
+async function generateWithMeshy(
+  imagePath: string,
+  modelDir: string,
+  skeletonType: SkeletonType,
+  apiKey: string
+): Promise<RiggingResult> {
+  console.log('[Rigging] Using Meshy API for 3D generation');
+
+  const imageBuffer = await fs.readFile(imagePath);
+  const base64Image = imageBuffer.toString('base64');
+  const ext = path.extname(imagePath).toLowerCase();
+  const mimeType = ext === '.jpg' || ext === '.jpeg' ? 'image/jpeg' : 'image/png';
+
+  // Create Image-to-3D task
+  const createResponse = await fetch(`${MESHY_API_BASE}/image-to-3d`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      image_url: `data:${mimeType};base64,${base64Image}`,
+      ai_model: 'meshy-4',
+      topology: 'quad',
+      target_polycount: 30000,
+    }),
+  });
+
+  if (!createResponse.ok) {
+    const error = await createResponse.text();
+    throw new Error(`Meshy API error (${createResponse.status}): ${error}`);
+  }
+
+  const createData = await createResponse.json();
+  const taskId = createData.result;
+  console.log(`[Rigging] Meshy task created: ${taskId}`);
+
+  // Poll for completion
+  let attempts = 0;
+  const maxAttempts = 120; // 10 minutes max
+  const pollInterval = 5000;
+
+  while (attempts < maxAttempts) {
+    const statusResponse = await fetch(`${MESHY_API_BASE}/image-to-3d/${taskId}`, {
+      headers: { Authorization: `Bearer ${apiKey}` },
+    });
+
+    if (!statusResponse.ok) {
+      throw new Error(`Meshy status check failed: ${statusResponse.status}`);
+    }
+
+    const statusData = await statusResponse.json();
+    console.log(`[Rigging] Meshy status: ${statusData.status} (${statusData.progress}%)`);
+
+    if (statusData.status === 'SUCCEEDED') {
+      // Download the model
+      const modelUrl = statusData.model_urls?.glb;
+      if (!modelUrl) {
+        throw new Error('No GLB model URL in Meshy response');
+      }
+
+      const basePath = path.join(modelDir, 'base.glb');
+      const riggedPath = path.join(modelDir, 'rigged.glb');
+
+      await downloadFile(modelUrl, basePath);
+      await fs.copyFile(basePath, riggedPath); // Meshy doesn't have separate rigging
+
+      console.log(`[Rigging] Meshy model downloaded to ${basePath}`);
+
+      return {
+        modelPath: basePath,
+        riggedModelPath: riggedPath,
+        skeletonType,
+        boneCount: SKELETON_CONFIGS[skeletonType].boneCount,
+      };
+    }
+
+    if (statusData.status === 'FAILED') {
+      throw new Error(`Meshy task failed: ${statusData.task_error?.message || 'Unknown error'}`);
+    }
+
+    await sleep(pollInterval);
+    attempts++;
+  }
+
+  throw new Error('Meshy task timed out');
 }
 
 interface ImageToModelOptions {
@@ -507,7 +612,7 @@ export function suggestSkeletonForCharacter(characterDescription: string): strin
 }
 
 export function getSupportedProviders(): RiggingProvider[] {
-  return ['tripo', 'placeholder'];
+  return ['tripo', 'meshy', 'placeholder'];
 }
 
 export async function checkTripoApiKey(): Promise<boolean> {
@@ -522,6 +627,26 @@ export async function checkTripoApiKey(): Promise<boolean> {
         Authorization: `Bearer ${apiKey}`,
       },
     });
+    return response.ok;
+  } catch {
+    return false;
+  }
+}
+
+export async function checkMeshyApiKey(): Promise<boolean> {
+  const apiKey = process.env.MESHY_API_KEY;
+  if (!apiKey) {
+    return false;
+  }
+
+  try {
+    const response = await fetch(`${MESHY_API_BASE}/image-to-3d`, {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+      },
+    });
+    // Meshy returns 200 for valid keys (list of tasks)
     return response.ok;
   } catch {
     return false;

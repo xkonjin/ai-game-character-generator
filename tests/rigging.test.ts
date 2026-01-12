@@ -212,8 +212,9 @@ describe('Rigging Module', () => {
     it('should return list of supported providers', () => {
       const providers = getSupportedProviders();
       expect(providers).toContain('tripo');
+      expect(providers).toContain('meshy');
       expect(providers).toContain('placeholder');
-      expect(providers).toHaveLength(2);
+      expect(providers).toHaveLength(3);
     });
   });
 });
