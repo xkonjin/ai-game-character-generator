@@ -39,20 +39,134 @@ interface RiggingOptions {
   pollInterval?: number;
 }
 
-const SKELETON_CONFIGS: Record<SkeletonType, { boneCount: number; description: string }> = {
+interface SkeletonConfig {
+  boneCount: number;
+  description: string;
+  bones: string[];
+  rootBone: string;
+  compatibility: string[];
+}
+
+const SKELETON_CONFIGS: Record<SkeletonType, SkeletonConfig> = {
   biped: {
     boneCount: 25,
     description: 'Humanoid skeleton with standard bone hierarchy',
+    rootBone: 'Hips',
+    bones: [
+      'Hips', 'Spine', 'Spine1', 'Spine2', 'Neck', 'Head',
+      'LeftShoulder', 'LeftArm', 'LeftForeArm', 'LeftHand',
+      'RightShoulder', 'RightArm', 'RightForeArm', 'RightHand',
+      'LeftUpLeg', 'LeftLeg', 'LeftFoot', 'LeftToeBase',
+      'RightUpLeg', 'RightLeg', 'RightFoot', 'RightToeBase',
+      'LeftHandThumb1', 'RightHandThumb1', 'HeadTop_End',
+    ],
+    compatibility: ['idle', 'walk', 'run', 'attack', 'jump', 'death', 'hurt'],
   },
   quadruped: {
     boneCount: 32,
     description: 'Four-legged creature skeleton',
+    rootBone: 'Root',
+    bones: [
+      'Root', 'Pelvis', 'Spine1', 'Spine2', 'Spine3', 'Neck1', 'Neck2', 'Head', 'Jaw',
+      'LeftFrontLeg1', 'LeftFrontLeg2', 'LeftFrontLeg3', 'LeftFrontFoot',
+      'RightFrontLeg1', 'RightFrontLeg2', 'RightFrontLeg3', 'RightFrontFoot',
+      'LeftBackLeg1', 'LeftBackLeg2', 'LeftBackLeg3', 'LeftBackFoot',
+      'RightBackLeg1', 'RightBackLeg2', 'RightBackLeg3', 'RightBackFoot',
+      'Tail1', 'Tail2', 'Tail3', 'Tail4',
+      'LeftEar', 'RightEar', 'Snout',
+    ],
+    compatibility: ['idle', 'walk', 'run', 'attack', 'jump', 'death'],
   },
   custom: {
     boneCount: 20,
     description: 'Custom skeleton for non-standard characters',
+    rootBone: 'Root',
+    bones: [
+      'Root', 'Center', 'Upper', 'Lower',
+      'Appendage1_Base', 'Appendage1_Mid', 'Appendage1_End',
+      'Appendage2_Base', 'Appendage2_Mid', 'Appendage2_End',
+      'Appendage3_Base', 'Appendage3_Mid', 'Appendage3_End',
+      'Appendage4_Base', 'Appendage4_Mid', 'Appendage4_End',
+      'Head', 'Jaw', 'TailBase', 'TailEnd',
+    ],
+    compatibility: ['idle', 'walk', 'attack', 'death'],
   },
 };
+
+export const ADDITIONAL_SKELETON_TYPES = {
+  bird: {
+    boneCount: 28,
+    description: 'Flying creature with wings',
+    rootBone: 'Root',
+    bones: [
+      'Root', 'Pelvis', 'Spine', 'Chest', 'Neck', 'Head', 'Beak',
+      'LeftWing1', 'LeftWing2', 'LeftWing3', 'LeftWingTip', 'LeftWingFeathers',
+      'RightWing1', 'RightWing2', 'RightWing3', 'RightWingTip', 'RightWingFeathers',
+      'LeftLeg1', 'LeftLeg2', 'LeftFoot', 'LeftToes',
+      'RightLeg1', 'RightLeg2', 'RightFoot', 'RightToes',
+      'Tail1', 'Tail2', 'TailFeathers',
+    ],
+    compatibility: ['idle', 'walk', 'attack', 'jump', 'death'],
+  },
+  fish: {
+    boneCount: 18,
+    description: 'Swimming creature skeleton',
+    rootBone: 'Root',
+    bones: [
+      'Root', 'Body1', 'Body2', 'Body3', 'Body4', 'TailBase', 'Tail', 'TailFin',
+      'Head', 'Jaw', 'LeftEye', 'RightEye',
+      'DorsalFin', 'LeftPectoralFin', 'RightPectoralFin',
+      'LeftPelvicFin', 'RightPelvicFin', 'AnalFin',
+    ],
+    compatibility: ['idle', 'walk', 'attack', 'death'],
+  },
+  spider: {
+    boneCount: 42,
+    description: 'Eight-legged creature',
+    rootBone: 'Cephalothorax',
+    bones: [
+      'Cephalothorax', 'Abdomen', 'Spinnerets',
+      'Head', 'LeftFang', 'RightFang', 'LeftPedipalp', 'RightPedipalp',
+      'Leg1L_1', 'Leg1L_2', 'Leg1L_3', 'Leg1L_4', 'Leg1L_Foot',
+      'Leg1R_1', 'Leg1R_2', 'Leg1R_3', 'Leg1R_4', 'Leg1R_Foot',
+      'Leg2L_1', 'Leg2L_2', 'Leg2L_3', 'Leg2L_4', 'Leg2L_Foot',
+      'Leg2R_1', 'Leg2R_2', 'Leg2R_3', 'Leg2R_4', 'Leg2R_Foot',
+      'Leg3L_1', 'Leg3L_2', 'Leg3L_3', 'Leg3L_4', 'Leg3L_Foot',
+      'Leg3R_1', 'Leg3R_2', 'Leg3R_3', 'Leg3R_4', 'Leg3R_Foot',
+      'Leg4L_1', 'Leg4L_2', 'Leg4L_3', 'Leg4L_4', 'Leg4L_Foot',
+      'Leg4R_1', 'Leg4R_2', 'Leg4R_3', 'Leg4R_4', 'Leg4R_Foot',
+    ],
+    compatibility: ['idle', 'walk', 'run', 'attack', 'death'],
+  },
+  snake: {
+    boneCount: 24,
+    description: 'Serpentine skeleton with no limbs',
+    rootBone: 'Head',
+    bones: [
+      'Head', 'Jaw', 'LeftFang', 'RightFang', 'Tongue',
+      'Spine1', 'Spine2', 'Spine3', 'Spine4', 'Spine5',
+      'Spine6', 'Spine7', 'Spine8', 'Spine9', 'Spine10',
+      'Spine11', 'Spine12', 'Spine13', 'Spine14', 'Spine15',
+      'TailBase', 'TailMid', 'TailTip', 'Rattle',
+    ],
+    compatibility: ['idle', 'walk', 'attack', 'death'],
+  },
+  mech: {
+    boneCount: 30,
+    description: 'Mechanical/robotic biped',
+    rootBone: 'Core',
+    bones: [
+      'Core', 'Torso', 'ChestPlate', 'Cockpit', 'HeadMount', 'Sensor',
+      'LeftShoulderMount', 'LeftArmUpper', 'LeftElbow', 'LeftArmLower', 'LeftHand', 'LeftWeaponMount',
+      'RightShoulderMount', 'RightArmUpper', 'RightElbow', 'RightArmLower', 'RightHand', 'RightWeaponMount',
+      'LeftHipMount', 'LeftLegUpper', 'LeftKnee', 'LeftLegLower', 'LeftFoot', 'LeftThruster',
+      'RightHipMount', 'RightLegUpper', 'RightKnee', 'RightLegLower', 'RightFoot', 'RightThruster',
+    ],
+    compatibility: ['idle', 'walk', 'run', 'attack', 'jump', 'death'],
+  },
+} as const;
+
+export type AdditionalSkeletonType = keyof typeof ADDITIONAL_SKELETON_TYPES;
 
 export async function generateAndRig3DModel(
   imagePath: string,
@@ -311,8 +425,85 @@ export function getSkeletonTypes(): SkeletonType[] {
   return Object.keys(SKELETON_CONFIGS) as SkeletonType[];
 }
 
-export function getSkeletonConfig(skeletonType: SkeletonType): { boneCount: number; description: string } {
+export function getAllSkeletonTypes(): string[] {
+  return [...getSkeletonTypes(), ...Object.keys(ADDITIONAL_SKELETON_TYPES)];
+}
+
+export function getSkeletonConfig(skeletonType: SkeletonType): SkeletonConfig {
   return { ...SKELETON_CONFIGS[skeletonType] };
+}
+
+export function getAdditionalSkeletonConfig(skeletonType: AdditionalSkeletonType): SkeletonConfig {
+  const config = ADDITIONAL_SKELETON_TYPES[skeletonType];
+  return {
+    ...config,
+    bones: [...config.bones],
+    compatibility: [...config.compatibility],
+  };
+}
+
+export function getAnySkeletonConfig(skeletonType: string): SkeletonConfig | null {
+  if (skeletonType in SKELETON_CONFIGS) {
+    return { ...SKELETON_CONFIGS[skeletonType as SkeletonType] };
+  }
+  if (skeletonType in ADDITIONAL_SKELETON_TYPES) {
+    const config = ADDITIONAL_SKELETON_TYPES[skeletonType as AdditionalSkeletonType];
+    return {
+      ...config,
+      bones: [...config.bones],
+      compatibility: [...config.compatibility],
+    };
+  }
+  return null;
+}
+
+export function isAnimationCompatible(skeletonType: string, animationType: string): boolean {
+  const config = getAnySkeletonConfig(skeletonType);
+  if (!config) return false;
+  return config.compatibility.includes(animationType);
+}
+
+export function getCompatibleAnimations(skeletonType: string): string[] {
+  const config = getAnySkeletonConfig(skeletonType);
+  if (!config) return [];
+  return [...config.compatibility];
+}
+
+export function getBoneHierarchy(skeletonType: string): { bones: string[]; rootBone: string } | null {
+  const config = getAnySkeletonConfig(skeletonType);
+  if (!config) return null;
+  return { bones: [...config.bones], rootBone: config.rootBone };
+}
+
+export function suggestSkeletonForCharacter(characterDescription: string): string {
+  const desc = characterDescription.toLowerCase();
+  
+  // Check for specific creature types
+  if (desc.includes('spider') || desc.includes('arachnid') || desc.includes('tarantula')) {
+    return 'spider';
+  }
+  if (desc.includes('snake') || desc.includes('serpent') || desc.includes('worm')) {
+    return 'snake';
+  }
+  if (desc.includes('bird') || desc.includes('flying') || desc.includes('wings')) {
+    return 'bird';
+  }
+  if (desc.includes('fish') || desc.includes('swimming') || desc.includes('aquatic')) {
+    return 'fish';
+  }
+  if (desc.includes('mech') || desc.includes('robot') || desc.includes('mechanical')) {
+    return 'mech';
+  }
+  if (desc.includes('dog') || desc.includes('cat') || desc.includes('wolf') || 
+      desc.includes('horse') || desc.includes('animal') || desc.includes('beast')) {
+    return 'quadruped';
+  }
+  if (desc.includes('blob') || desc.includes('slime') || desc.includes('amorphous')) {
+    return 'custom';
+  }
+  
+  // Default to biped for humanoid characters
+  return 'biped';
 }
 
 export function getSupportedProviders(): RiggingProvider[] {
