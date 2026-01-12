@@ -13,174 +13,201 @@ Invoke this skill when the user wants to:
 - Create game characters or sprites from text descriptions
 - Generate animated character loops (idle, walk, run, attack)
 - Convert 2D sprites to rigged 3D models
-- Export game-ready assets for Three.js/WebGL projects
+- Export game-ready assets for Three.js/WebGL/Unity/Unreal projects
+
+## Quick Start
+
+```bash
+# Navigate to the project
+cd /Users/a004/codeprojects/ai-game-character-generator
+
+# Check API configuration
+npm run dev -- check
+
+# Generate a character
+npm run dev -- generate -p "cute pixel knight" -s pixel -a idle,walk
+```
+
+## Available Commands
+
+| Command | Description |
+|---------|-------------|
+| `generate` | Full pipeline: sprite → animation → 3D → export |
+| `image-gen` | Generate sprite only |
+| `animate` | Animate existing sprite |
+| `rig-3d` | Convert sprite to rigged 3D model |
+| `export` | Export for Three.js |
+| `list` | Show available styles, animations, providers |
+| `check` | Verify API key configuration |
+
+## Art Styles
+
+| Style | Best For | Description |
+|-------|----------|-------------|
+| `pixel` | Retro games | 8-bit/16-bit pixel art sprites |
+| `anime` | Visual novels, JRPGs | Chibi/anime style characters |
+| `lowpoly` | Mobile games | Low polygon count, flat shading |
+| `painterly` | Fantasy games | Hand-painted, concept art style |
+| `voxel` | Minecraft-like | 3D cube-based characters |
+
+## Animation Types
+
+| Animation | Duration | Use Case |
+|-----------|----------|----------|
+| `idle` | 4s | Standing/breathing loop |
+| `walk` | 4s | 8-direction walk cycle |
+| `run` | 3s | Running animation |
+| `attack` | 2s | Weapon/magic attack |
+| `jump` | 2s | Jump arc |
+| `death` | 3s | Death sequence |
+| `hurt` | 1s | Damage reaction |
+
+## Skeleton Types
+
+| Type | Bones | Use Case |
+|------|-------|----------|
+| `biped` | 25 | Humanoid characters |
+| `quadruped` | 32 | Four-legged creatures |
+| `custom` | 20 | Non-standard characters |
 
 ## Pipeline Stages
 
 ### Stage 1: Image Generation
-Generate the base character sprite using AI image generation.
-
-**Supported Providers:**
-- **DALL-E 3** (OpenAI) - Best for stylized/artistic characters
-- **Stable Diffusion** - Best for pixel art with specialized models
-- **PixelLab** - Best for true pixel art with animation support
-
-**Prompt Engineering:**
-```
-Style prefix: "pixel art sprite sheet, game asset, transparent background, "
-Character: "{user description}"
-Style suffix: ", 8-bit style, clean edges, game-ready"
+```bash
+npm run dev -- image-gen -p "cute wizard" -s anime -r 512
 ```
 
-### Stage 2: Video Animation (Google Veo 3.1)
-Animate the static sprite into looping sequences.
+**Providers:**
+- `openai` - DALL-E 3 (default)
+- `stability` - Stable Diffusion XL
+- `pixellab` - Specialized pixel art
 
-**API Endpoint:** `https://generativelanguage.googleapis.com/v1beta/models/veo-3.1`
-
-**Animation Types:**
-- `idle` - Subtle breathing/movement loop (2-4 seconds)
-- `walk` - Walk cycle (4 seconds, 8 frames)
-- `run` - Running animation (3 seconds)
-- `attack` - Attack sequence (2 seconds)
-- `jump` - Jump arc (2 seconds)
-
-**Veo Request Format:**
-```json
-{
-  "model": "veo-3.1",
-  "prompt": "Animate this character in a smooth {animation_type} loop, maintain character consistency, seamless loop",
-  "image": "{base64_sprite}",
-  "duration": "4s",
-  "aspect_ratio": "1:1"
-}
+### Stage 2: Video Animation
+```bash
+npm run dev -- animate -i ./output/sprite.png -t idle,walk
 ```
 
-### Stage 3: 3D Rigging (Tripo AI)
-Convert 2D animation to rigged 3D model.
+**Providers:**
+- `veo` - Google Veo 3.1 (default)
+- `runway` - Runway Gen-3
+- `placeholder` - Static placeholder
 
-**API Endpoint:** `https://api.tripo3d.ai/v2/openapi/task`
-
-**Workflow:**
-1. Submit image-to-3D task
-2. Poll for completion
-3. Apply auto-rigging with skeleton type
-4. Download GLB output
-
-**Tripo Request:**
-```json
-{
-  "type": "image_to_model",
-  "file": "{image_or_video}",
-  "model_version": "v2.5-20250117",
-  "face_limit": 10000,
-  "texture": true,
-  "pbr": true
-}
+### Stage 3: 3D Rigging
+```bash
+npm run dev -- rig-3d -i ./output/sprite.png -k biped
 ```
 
-**Rigging Request:**
-```json
-{
-  "type": "rig",
-  "original_model_task_id": "{model_task_id}",
-  "rig_type": "biped"  // or "quadruped", "custom"
-}
-```
+**Providers:**
+- `tripo` - Tripo AI (default)
+- `placeholder` - Placeholder model
 
 ### Stage 4: Three.js Export
-Prepare the rigged model for Three.js integration.
-
-**Export Format:** GLB (binary GLTF)
-
-**Three.js Loading:**
-```javascript
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
-
-const loader = new GLTFLoader();
-loader.load('character.glb', (gltf) => {
-  const model = gltf.scene;
-  const animations = gltf.animations;
-  scene.add(model);
-  
-  const mixer = new THREE.AnimationMixer(model);
-  animations.forEach((clip) => {
-    mixer.clipAction(clip).play();
-  });
-});
+```bash
+npm run dev -- export -i ./output/model/rigged.glb
 ```
 
-## Required Configuration
+**Formats:** GLB (default), GLTF
 
-Ensure these environment variables are set:
-- `OPENAI_API_KEY` - For DALL-E image generation
-- `GOOGLE_CLOUD_PROJECT` - For Veo API access
-- `TRIPO_API_KEY` - For 3D rigging
-
-## Execution Steps
-
-1. **Parse user request** - Extract character description, style, and animation types
-2. **Generate base sprite** - Call image generation API with optimized prompt
-3. **Create animation** - Use Veo to animate the sprite into loops
-4. **Generate 3D model** - Submit to Tripo for image-to-3D conversion
-5. **Apply rigging** - Auto-rig the model with appropriate skeleton
-6. **Export GLB** - Download and save the final asset
-7. **Generate preview** - Create a simple Three.js preview HTML file
-
-## Input Parameters
-
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `prompt` | string | required | Character description |
-| `style` | enum | "pixel" | pixel, anime, lowpoly, painterly, voxel |
-| `animations` | array | ["idle"] | Animation types to generate |
-| `resolution` | number | 512 | Output resolution |
-| `skeleton` | enum | "biped" | biped, quadruped, custom |
-| `output_dir` | string | "./output" | Output directory |
-
-## Output Artifacts
+## Output Structure
 
 ```
 output/
 ├── {character_name}/
-│   ├── sprite.png           # Base sprite image
-│   ├── sprite_sheet.png     # Animation sprite sheet
+│   ├── sprite.png           # Base sprite
 │   ├── animations/
-│   │   ├── idle.mp4         # Veo animation video
+│   │   ├── idle.mp4
 │   │   ├── walk.mp4
 │   │   └── ...
 │   ├── model/
-│   │   ├── base.glb         # Unrigged 3D model
-│   │   └── rigged.glb       # Rigged 3D model
-│   ├── preview.html         # Three.js preview
+│   │   ├── base.glb         # Unrigged model
+│   │   └── rigged.glb       # Rigged model
+│   ├── preview.html         # Interactive 3D preview
+│   ├── integration.js       # Three.js code
+│   ├── CharacterViewer.tsx  # React component
 │   └── metadata.json        # Generation metadata
 ```
 
-## Error Handling
+## Required API Keys
 
-- **Image generation fails**: Retry with simplified prompt, reduce detail
-- **Veo animation fails**: Fall back to frame interpolation
-- **Tripo rigging fails**: Export unrigged model, flag for manual rigging
-- **API rate limits**: Implement exponential backoff
+Set in `.env` file:
+```
+OPENAI_API_KEY=sk-...        # DALL-E image generation
+GOOGLE_API_KEY=...           # Veo video animation
+TRIPO_API_KEY=...            # 3D rigging
+```
 
-## Verification
+## Example Workflows
 
-After completion, verify:
-1. [ ] Base sprite matches description
-2. [ ] Animation loops smoothly
-3. [ ] 3D model has correct proportions
-4. [ ] Rigging allows natural movement
-5. [ ] GLB loads correctly in Three.js
-6. [ ] File sizes are optimized for web
+### Basic Character
+```bash
+npm run dev -- generate -p "pixel art knight" -s pixel -a idle
+```
 
-## Example Usage
+### Full Animation Set
+```bash
+npm run dev -- generate \
+  -p "anime wizard with staff" \
+  -s anime \
+  -a idle,walk,attack,death \
+  -k biped
+```
 
-**User request:** "Create a cute pixel art knight with idle and walk animations"
+### Quadruped Creature
+```bash
+npm run dev -- generate \
+  -p "cute pixel dragon" \
+  -s pixel \
+  -k quadruped \
+  -a idle,walk
+```
 
-**Execution:**
-1. Generate knight sprite with DALL-E: "pixel art sprite, cute knight character, silver armor, sword, 8-bit style, game asset"
-2. Animate with Veo: idle breathing loop, 8-frame walk cycle
-3. Convert to 3D with Tripo: image-to-model, biped rigging
-4. Export GLB with embedded animations
-5. Create preview.html with Three.js viewer
+### JSON Output
+```bash
+npm run dev -- --json generate -p "robot warrior"
+```
 
-**Output:** `./output/cute_knight/rigged.glb` + preview
+## Verification Checklist
+
+After generation, verify:
+- [ ] Sprite PNG has transparent background
+- [ ] Animations loop seamlessly
+- [ ] 3D model proportions match sprite
+- [ ] Rigging allows natural movement
+- [ ] GLB loads in preview.html
+- [ ] File size < 5MB for web
+
+## Troubleshooting
+
+| Issue | Solution |
+|-------|----------|
+| API key not set | Run `npm run dev -- check` |
+| Image gen fails | Try simpler prompt, check quota |
+| Animation fails | Falls back to placeholder |
+| Rigging fails | Check Tripo API key/credits |
+| Large file size | Use `--face-limit` option |
+
+## Integration Examples
+
+### Three.js
+```javascript
+import { CharacterLoader } from './integration.js';
+
+const character = new CharacterLoader(scene);
+await character.load('./model/rigged.glb');
+character.playAnimation('idle');
+```
+
+### React Three Fiber
+```tsx
+import CharacterViewer from './CharacterViewer';
+
+<CharacterViewer animation="walk" />
+```
+
+## Related Files
+
+- `/src/image-gen/` - Image generation module
+- `/src/video-gen/` - Video animation module
+- `/src/rigging/` - 3D rigging module
+- `/src/threejs-export/` - Export module
+- `/src/cli/` - CLI implementation
