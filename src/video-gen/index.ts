@@ -33,11 +33,12 @@ const ANIMATION_PROMPTS: Record<AnimationType, { prompt: string; duration: strin
   },
 };
 
-interface VeoConfig {
-  projectId: string;
-  location: string;
-  model: string;
-}
+// VeoConfig for future use with Vertex AI
+// interface VeoConfig {
+//   projectId: string;
+//   location: string;
+//   model: string;
+// }
 
 export async function animateSprite(
   spritePath: string,
@@ -90,7 +91,7 @@ interface VeoGenerateParams {
 }
 
 async function generateWithVeo(params: VeoGenerateParams): Promise<{ videoBuffer: Buffer }> {
-  const { prompt, image, duration, projectId } = params;
+  const { prompt, image, duration, projectId: _projectId } = params;
   
   const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/veo-3.1:generateContent`;
   

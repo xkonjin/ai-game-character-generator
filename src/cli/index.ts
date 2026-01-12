@@ -14,7 +14,8 @@ import type {
   AnimationType, 
   SkeletonType, 
   PipelineResult,
-  GenerationConfig 
+  GenerationConfig,
+  VideoGenResult
 } from '../types.js';
 
 dotenv.config();
@@ -164,7 +165,7 @@ async function runFullPipeline(config: GenerationConfig): Promise<PipelineResult
   }
 
   spinner = ora('Step 2/4: Creating animations with Veo...').start();
-  let videoResults;
+  let videoResults: VideoGenResult[] = [];
   try {
     videoResults = await createAnimationBatch(
       imageResult.imagePath,
@@ -172,7 +173,7 @@ async function runFullPipeline(config: GenerationConfig): Promise<PipelineResult
       outputDir
     );
     spinner.succeed(`${videoResults.length} animations created`);
-  } catch (error) {
+  } catch (_error) {
     spinner.warn('Animation generation failed, continuing with static sprite');
     videoResults = [];
   }

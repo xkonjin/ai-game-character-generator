@@ -67,9 +67,12 @@ async function generateWithOpenAI(
     response_format: 'b64_json',
   });
 
+  if (!response.data || response.data.length === 0) {
+    throw new Error('No image data returned from OpenAI');
+  }
   const imageData = response.data[0];
   if (!imageData.b64_json) {
-    throw new Error('No image data returned from OpenAI');
+    throw new Error('No base64 image data returned from OpenAI');
   }
 
   await fs.mkdir(outputDir, { recursive: true });
