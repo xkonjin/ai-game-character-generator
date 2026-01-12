@@ -103,7 +103,7 @@ program
       const result = await generateAndRig3DModel(
         options.input,
         options.output,
-        options.skeleton as SkeletonType
+        { skeletonType: options.skeleton as SkeletonType }
       );
       spinner.succeed(`Rigged model saved to ${result.riggedModelPath}`);
       console.log(`  - Base model: ${result.modelPath}`);
@@ -184,7 +184,7 @@ async function runFullPipeline(config: GenerationConfig): Promise<PipelineResult
     riggingResult = await generateAndRig3DModel(
       imageResult.imagePath,
       outputDir,
-      config.skeleton
+      { skeletonType: config.skeleton }
     );
     spinner.succeed('3D model rigged');
   } catch (error) {
