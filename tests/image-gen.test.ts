@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest';
-import { optimizePrompt } from '../src/image-gen/index.js';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { optimizePrompt, getStylePrompts, getSupportedProviders } from '../src/image-gen/index.js';
 
 describe('Image Generation', () => {
   describe('optimizePrompt', () => {
@@ -43,6 +43,68 @@ describe('Image Generation', () => {
       styles.forEach(style => {
         const result = optimizePrompt('character', style);
         expect(result).toContain('transparent background');
+      });
+    });
+  });
+
+  describe('getStylePrompts', () => {
+    it('should return all style prompts', () => {
+      const prompts = getStylePrompts();
+      expect(Object.keys(prompts)).toHaveLength(5);
+      expect(prompts).toHaveProperty('pixel');
+      expect(prompts).toHaveProperty('anime');
+      expect(prompts).toHaveProperty('lowpoly');
+      expect(prompts).toHaveProperty('painterly');
+      expect(prompts).toHaveProperty('voxel');
+    });
+
+    it('should return style prompts with prefix and suffix', () => {
+      const prompts = getStylePrompts();
+      Object.values(prompts).forEach(prompt => {
+        expect(prompt).toHaveProperty('prefix');
+        expect(prompt).toHaveProperty('suffix');
+        expect(typeof prompt.prefix).toBe('string');
+        expect(typeof prompt.suffix).toBe('string');
+      });
+    });
+  });
+
+  describe('getSupportedProviders', () => {
+    it('should return list of supported providers', () => {
+      const providers = getSupportedProviders();
+      expect(providers).toContain('openai');
+      expect(providers).toContain('stability');
+      expect(providers).toContain('pixellab');
+      expect(providers).toHaveLength(3);
+    });
+  });
+
+  describe('prompt quality', () => {
+    it('should generate prompts with game-specific keywords', () => {
+      const styles = ['pixel', 'anime', 'lowpoly', 'painterly', 'voxel'] as const;
+      const gameKeywords = ['game', 'sprite', 'asset', 'character'];
+      
+      styles.forEach(style => {
+        const result = optimizePrompt('hero', style);
+        const hasGameKeyword = gameKeywords.some(kw => 
+          result.toLowerCase().includes(kw)
+        );
+        expect(hasGameKeyword).toBe(true);
+      });
+    });
+
+    it('should preserve user prompt content', () => {
+      const userPrompts = [
+        'cute knight with sword',
+        'fire mage casting spell',
+        'robot with laser eyes',
+        'dragon breathing fire',
+        'ninja in shadows'
+      ];
+
+      userPrompts.forEach(userPrompt => {
+        const result = optimizePrompt(userPrompt, 'pixel');
+        expect(result).toContain(userPrompt);
       });
     });
   });
